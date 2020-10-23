@@ -66,7 +66,7 @@ Param (
 #
 # ======================================================================================================= #
 
-$CheckForUpdates = $True
+$CheckForUpdates = $False
 $Verbose7Zip = $False
 
 
@@ -76,9 +76,12 @@ $Verbose7Zip = $False
 # ======================================================================================================= #
 #
 # LIBRARY
+# 
+# # The code repository for this project is Public
 #
 # ======================================================================================================= #
 
+$codeRepository = "https://github.com/petmedix/PowerShell-Backup"
 $InstallLocation = $ENV:USERPROFILE + "\Scripts\PowerShell-Backup"
 $DesktopFolder = $ENV:USERPROFILE + "\Desktop"
 $StartFolder = $ENV:APPDATA + "\Microsoft\Windows\Start Menu\Programs\PowerShell-Backup"
@@ -152,7 +155,7 @@ Function ScriptInitialization {
 
 	$Script:BackupListFile = $ConfigFolder + "\BackupList.txt"
 	If ((Test-Path "$BackupListFile") -eq $False) {
-		DownloadFile "https://github.com/mpb10/PowerShell-Backup/raw/master/install/files/BackupList.txt" "$ConfigFolder\BackupList.txt"
+		DownloadFile "${codeRepository}/raw/master/install/files/BackupList.txt" "$ConfigFolder\BackupList.txt"
 	}
 }
 
@@ -179,11 +182,11 @@ Function InstallScript {
 
 			Copy-Item "$PSScriptRoot\backup.ps1" -Destination "$RootFolder"
 			
-			DownloadFile "https://github.com/mpb10/PowerShell-Backup/raw/master/install/files/PowerShell-Backup.lnk" "$RootFolder\PowerShell-Backup.lnk"
+			DownloadFile "${codeRepository}/raw/master/install/files/PowerShell-Backup.lnk" "$RootFolder\PowerShell-Backup.lnk"
 			Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$DesktopFolder\PowerShell-Backup.lnk"
 			Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$StartFolder\PowerShell-Backup.lnk"
-			DownloadFile "https://github.com/mpb10/PowerShell-Backup/raw/master/LICENSE" "$RootFolder\LICENSE.txt"
-			DownloadFile "https://github.com/mpb10/PowerShell-Backup/raw/master/README.md" "$RootFolder\README.md"
+			DownloadFile "${codeRepository}/raw/master/LICENSE" "$RootFolder\LICENSE.txt"
+			DownloadFile "${codeRepository}/raw/master/README.md" "$RootFolder\README.md"
 
 			Write-Host "`nInstallation complete. Please restart the script." -ForegroundColor "Yellow"
 			PauseScript
@@ -195,7 +198,7 @@ Function InstallScript {
 
 
 Function UpdateScript {
-	DownloadFile "https://github.com/mpb10/PowerShell-Backup/raw/master/install/files/version-file" "$TempFolder\version-file.txt"
+	DownloadFile "${codeRepository}/raw/master/install/files/version-file" "$TempFolder\version-file.txt"
 	[Version]$NewestVersion = Get-Content "$TempFolder\version-file.txt" | Select -Index 0
 	Remove-Item -Path "$TempFolder\version-file.txt"
 	
@@ -204,21 +207,21 @@ Function UpdateScript {
 		$MenuOption = Read-Host "`nUpdate to this version? [y/n]"
 		
 		If ($MenuOption.Trim() -like "y" -or $MenuOption.Trim() -like "yes") {
-			DownloadFile "http://github.com/mpb10/PowerShell-Backup/raw/master/backup.ps1" "$RootFolder\backup.ps1"
+			DownloadFile "${codeRepository}/raw/master/backup.ps1" "$RootFolder\backup.ps1"
 			
 			If ($PSScriptRoot -eq "$InstallLocation") {
 				If ((Test-Path "$StartFolder") -eq $False) {
 					New-Item -Type Directory -Path "$StartFolder" | Out-Null
 				}
 				
-				DownloadFile "https://github.com/mpb10/PowerShell-Backup/raw/master/install/files/Youtube-dl.lnk" "$RootFolder\PowerShell-Backup.lnk"
+				DownloadFile "${codeRepository}/raw/master/install/files/Youtube-dl.lnk" "$RootFolder\PowerShell-Backup.lnk"
 				Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$DesktopFolder\PowerShell-Backup.lnk"
 				Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$StartFolder\PowerShell-Backup.lnk"
-				DownloadFile "https://github.com/mpb10/PowerShell-Backup/raw/master/LICENSE" "$RootFolder\LICENSE.txt"
-				DownloadFile "https://github.com/mpb10/PowerShell-Backup/raw/master/README.md" "$RootFolder\README.md"
+				DownloadFile "${codeRepository}/raw/master/LICENSE" "$RootFolder\LICENSE.txt"
+				DownloadFile "${codeRepository}/raw/master/README.md" "$RootFolder\README.md"
 			}
 			
-			DownloadFile "https://github.com/mpb10/PowerShell-Backup/raw/master/install/files/UpdateNotes.txt" "$TempFolder\UpdateNotes.txt"
+			DownloadFile "${codeRepository}/raw/master/install/files/UpdateNotes.txt" "$TempFolder\UpdateNotes.txt"
 			Get-Content "$TempFolder\UpdateNotes.txt"
 			Remove-Item "$TempFolder\UpdateNotes.txt"
 			
@@ -267,18 +270,15 @@ Function BackupFolder {
 	}
 	
 	$InputFolderBottom = $InputFolder.Replace(" ", "_") | Split-Path -Leaf
-	
-	If (($OutputFormat.Trim()) -like "*7z") {
-		$FileFormat = ".7z"
-	}
-	ElseIf (($OutputFormat.Trim()) -like "*gzip") {
-		$FileFormat = ".gzip"
-	}
-	ElseIf (($OutputFormat.Trim()) -like "*tar") {
+
+	$tarOptions = "-cv"
+
+    If (($OutputFormat.Trim()) -like "*tar") {
 		$FileFormat = ".tar"
 	}
-	Else {
-		$FileFormat = ".zip"
+	ElseIf (($OutputFormat.Trim()) -like "*tar.gz") {
+		$FileFormat = ".tar.gz"
+		$tarOptions += "z"
 	}
 	
 	$OutputFileName = "$OutputFolder\$InputFolderBottom" + "_" + "$CurrentDate$FileFormat"
@@ -287,18 +287,19 @@ Function BackupFolder {
 	While ((Test-Path "$OutputFileName") -eq $True) {
 		$Counter++
 		$OutputFileName = "$OutputFolder\$InputFolderBottom" + "_" + "$CurrentDate ($Counter)$FileFormat"
-	}	
+	}
 	
 	Write-Host "`nCompressing folder: ""$InputFolder""`nCompressing to:     ""$OutputFileName""" -ForegroundColor "Green"
 	
-	$7ZipCommand = "7za a ""$OutputFileName"" ""$InputFolder\*"""
-	Write-Verbose "7-Zip command: $7zipCommand"
+	$tarOptions += "f"
+	$tarCommand = "tar.exe" + $tarOptions + " " + $OutputFileName + " " + $InputFolder + "\*"
+	Write-Verbose "tar command: $tarCommand"
 	
-	If ($Verbose7Zip -eq $True) {
-		Invoke-Expression "$7ZipCommand" | Tee-Object "$TempFolder\powershell-backup_log.log" -Append
+	If ($VerboseTar -eq $True) {
+		Invoke-Expression "$tarCommand" | Tee-Object "$TempFolder\powershell-backup_log.log" -Append
 	}
 	Else {
-		Invoke-Expression "$7ZipCommand" | Out-File "$TempFolder\powershell-backup_log.log" -Append
+		Invoke-Expression "$tarCommand" | Out-File "$TempFolder\powershell-backup_log.log" -Append
 	}
 	
 	Write-Host "`nCompression to ""$OutputFileName"" complete." -ForegroundColor "Yellow"
