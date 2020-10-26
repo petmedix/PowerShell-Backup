@@ -81,7 +81,7 @@ $Verbose7Zip = $False
 #
 # ======================================================================================================= #
 
-$codeRepository = "https://github.com/petmedix/PowerShell-Backup"
+$codeRepository = "https://raw.githubusercontent.com/petmedix/PowerShell-Backup/master"
 $InstallLocation = $ENV:USERPROFILE + "\Scripts\PowerShell-Backup"
 $DesktopFolder = $ENV:USERPROFILE + "\Desktop"
 $StartFolder = $ENV:APPDATA + "\Microsoft\Windows\Start Menu\Programs\PowerShell-Backup"
@@ -115,20 +115,8 @@ Function DownloadFile {
 		[String]$URLToDownload,
 		[String]$SaveLocation
 	)
-	(New-Object System.Net.WebClient).DownloadFile("$URLToDownload", "$TempFolder\download.tmp")
+	Invoke-WebRequest -Uri "$URLToDownload" -OutFile "$TempFolder\download.tmp"
 	Move-Item -Path "$TempFolder\download.tmp" -Destination "$SaveLocation" -Force
-}
-
-
-
-Function Download7Zip {
-	DownloadFile "http://www.7-zip.org/a/7za920.zip" "$BinFolder\7za920.zip"
-	
-	Expand-Archive -Path "$BinFolder\7za920.zip" -DestinationPath "$BinFolder\7za920"
-	
-	Copy-Item -Path "$BinFolder\7za920\7za.exe" -Destination "$BinFolder"
-	Remove-Item -Path "$BinFolder\7za920.zip"
-	Remove-Item -Path "$BinFolder\7za920" -Recurse -Force
 }
 
 
@@ -155,7 +143,7 @@ Function ScriptInitialization {
 
 	$Script:BackupListFile = $ConfigFolder + "\BackupList.txt"
 	If ((Test-Path "$BackupListFile") -eq $False) {
-		DownloadFile "${codeRepository}/raw/master/install/files/BackupList.txt" "$ConfigFolder\BackupList.txt"
+		DownloadFile "${codeRepository}/install/files/BackupList.txt" "$ConfigFolder\BackupList.txt"
 	}
 }
 
@@ -178,15 +166,13 @@ Function InstallScript {
 				New-Item -Type Directory -Path "$StartFolder" | Out-Null
 			}
 
-			Download7Zip
-
 			Copy-Item "$PSScriptRoot\backup.ps1" -Destination "$RootFolder"
 			
-			DownloadFile "${codeRepository}/raw/master/install/files/PowerShell-Backup.lnk" "$RootFolder\PowerShell-Backup.lnk"
+			DownloadFile "${codeRepository}/install/files/PowerShell-Backup.lnk" "$RootFolder\PowerShell-Backup.lnk"
 			Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$DesktopFolder\PowerShell-Backup.lnk"
 			Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$StartFolder\PowerShell-Backup.lnk"
-			DownloadFile "${codeRepository}/raw/master/LICENSE" "$RootFolder\LICENSE.txt"
-			DownloadFile "${codeRepository}/raw/master/README.md" "$RootFolder\README.md"
+			DownloadFile "${codeRepository}/LICENSE" "$RootFolder\LICENSE.txt"
+			DownloadFile "${codeRepository}/README.md" "$RootFolder\README.md"
 
 			Write-Host "`nInstallation complete. Please restart the script." -ForegroundColor "Yellow"
 			PauseScript
@@ -198,7 +184,7 @@ Function InstallScript {
 
 
 Function UpdateScript {
-	DownloadFile "${codeRepository}/raw/master/install/files/version-file" "$TempFolder\version-file.txt"
+	DownloadFile "${codeRepository}/install/files/version-file" "$TempFolder\version-file.txt"
 	[Version]$NewestVersion = Get-Content "$TempFolder\version-file.txt" | Select -Index 0
 	Remove-Item -Path "$TempFolder\version-file.txt"
 	
@@ -207,14 +193,14 @@ Function UpdateScript {
 		$MenuOption = Read-Host "`nUpdate to this version? [y/n]"
 		
 		If ($MenuOption.Trim() -like "y" -or $MenuOption.Trim() -like "yes") {
-			DownloadFile "${codeRepository}/raw/master/backup.ps1" "$RootFolder\backup.ps1"
+			DownloadFile "${codeRepository}/backup.ps1" "$RootFolder\backup.ps1"
 			
 			If ($PSScriptRoot -eq "$InstallLocation") {
 				If ((Test-Path "$StartFolder") -eq $False) {
 					New-Item -Type Directory -Path "$StartFolder" | Out-Null
 				}
 				
-				DownloadFile "${codeRepository}/raw/master/install/files/Youtube-dl.lnk" "$RootFolder\PowerShell-Backup.lnk"
+				DownloadFile "${codeRepository}/install/files/Youtube-dl.lnk" "$RootFolder\PowerShell-Backup.lnk"
 				Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$DesktopFolder\PowerShell-Backup.lnk"
 				Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$StartFolder\PowerShell-Backup.lnk"
 				DownloadFile "${codeRepository}/raw/master/LICENSE" "$RootFolder\LICENSE.txt"
