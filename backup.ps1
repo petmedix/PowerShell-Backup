@@ -283,7 +283,7 @@ Function BackupFolder {
 		$FileFormat = ".tar.lz"
 		$tarOptions += " --lzma"
 	}
-	Else (($OutputFormat.Trim()) -like "*tar") {
+	ElseIf (($OutputFormat.Trim()) -like "*tar") {
 		$FileFormat = ".tar"
 	}
 	
@@ -297,7 +297,7 @@ Function BackupFolder {
 	
 	Write-Host "`nCompressing folder: ""$InputFolder""`nCompressing to:     ""$OutputFileName""" -ForegroundColor "Green"
 	
-	$tarOptions += "f"
+	$tarOptions += " -f"
 	$tarCommand = "tar.exe" + $tarOptions + " " + $OutputFileName + " " + $InputFolder + "\*"
 	Write-Verbose "tar command: $tarCommand"
 	
