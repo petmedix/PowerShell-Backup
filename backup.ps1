@@ -210,11 +210,11 @@ Function UpdateScript {
 				
 				Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$DesktopFolder\PowerShell-Backup.lnk"
 				Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$StartFolder\PowerShell-Backup.lnk"
-				DownloadFile "${codeRepository}/raw/master/LICENSE" "$RootFolder\LICENSE.txt"
-				DownloadFile "${codeRepository}/raw/master/README.md" "$RootFolder\README.md"
+				DownloadFile "${codeRepository}/LICENSE" "$RootFolder\LICENSE.txt"
+				DownloadFile "${codeRepository}/README.md" "$RootFolder\README.md"
 			}
 			
-			DownloadFile "${codeRepository}/raw/master/install/files/UpdateNotes.txt" "$TempFolder\UpdateNotes.txt"
+			DownloadFile "${codeRepository}/install/files/UpdateNotes.txt" "$TempFolder\UpdateNotes.txt"
 			Get-Content "$TempFolder\UpdateNotes.txt"
 			Remove-Item "$TempFolder\UpdateNotes.txt"
 			
