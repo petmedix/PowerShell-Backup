@@ -1,12 +1,20 @@
 
 ===================================================================================================
+                                      Notes for version 2.5.0                                      
+===================================================================================================
+1.  Code forked from our repo but remains under GNU GPLv3, so OS.
+
+2.  Removed reliance on 7zip executable and use bsdtar for archiving (Build 17063 or higher 
+    required). This means no .zip but yes compress archive with gzip/bzip2/xz/lzma
+
+2.  Similarly, use curl - or rather Invoke-WebRequest - to download files (Build 17063 or higher 
+    required).
+
+3.  Other code optimisations and bug fixes
+===================================================================================================
                                       Notes for version 2.0.0                                      
 ===================================================================================================
-
  1.  Re-wrote the script in the likeness of PowerShell-Youtube-dl. Cleaned up code.
-
  2.  Can backup individual folders or use the BackupList.txt file to run batch jobs.
- 
  3.  Implemented some logging to the temp folder.
-
 ===================================================================================================
