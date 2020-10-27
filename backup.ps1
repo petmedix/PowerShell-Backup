@@ -194,7 +194,7 @@ Function InstallScript {
 Function UpdateScript {
 	DownloadFile "${codeRepository}/install/files/version-file" "$TempFolder\version-file.txt"
 	[Version]$NewestVersion = Get-Content "$TempFolder\version-file.txt" | Select -Index 0
-	Remove-Item -Path "$TempFolder\version-file.txt"
+	#Remove-Item -Path "$TempFolder\version-file.txt"
 	
 	If ($NewestVersion -gt $RunningVersion) {
 		Write-Host "`nA new version of PowerShell-Backup is available: v$NewestVersion" -ForegroundColor "Yellow"
@@ -208,7 +208,6 @@ Function UpdateScript {
 					New-Item -Type Directory -Path "$StartFolder" | Out-Null
 				}
 				
-				DownloadFile "${codeRepository}/install/files/Youtube-dl.lnk" "$RootFolder\PowerShell-Backup.lnk"
 				Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$DesktopFolder\PowerShell-Backup.lnk"
 				Copy-Item "$RootFolder\PowerShell-Backup.lnk" -Destination "$StartFolder\PowerShell-Backup.lnk"
 				DownloadFile "${codeRepository}/raw/master/LICENSE" "$RootFolder\LICENSE.txt"
@@ -542,9 +541,9 @@ If ((Test-Path "$TempFolder\powershell-backup_log.log") -eq $True) {
 	}
 }
 
-If ((Test-Path "$BinFolder\7za.exe") -eq $False -and $Install -eq $False) {
-	Write-Host "`n7-Zip .exe not found. Downloading and installing to: ""$BinFolder"" ...`n" -ForegroundColor "Yellow"
-	Download7Zip
+If ((Test-Path "$BinFolder\rclone.exe") -eq $False -and $Install -eq $False) {
+	Write-Host "`nrclone.exe not found. Downloading and installing to: ""$BinFolder"" ...`n" -ForegroundColor "Yellow"
+	DownloadRclone
 }
 
 If (($PSBoundParameters.Count) -gt 0) {
