@@ -81,6 +81,7 @@ $Verbose7Zip = $False
 #
 # ======================================================================================================= #
 
+$rcloneDownloadUri = "https://downloads.rclone.org/v1.53.2/rclone-v1.53.2-windows-amd64.zip"
 $codeRepository = "https://raw.githubusercontent.com/petmedix/PowerShell-Backup/master"
 $InstallLocation = $ENV:USERPROFILE + "\Scripts\PowerShell-Backup"
 $DesktopFolder = $ENV:USERPROFILE + "\Desktop"
@@ -119,7 +120,14 @@ Function DownloadFile {
 	Move-Item -Path "$TempFolder\download.tmp" -Destination "$SaveLocation" -Force
 }
 
-
+Function DownloadRclone {
+	DownloadFile $rcloneDownloadUri "$BinFolder\rclone.zip"
+	Push-Location $BinFolder
+	Expand-Archive -Path "rclone.zip" -DestinationPath ".\"
+	Move-Item -Path "rclone-*" -Destination "rclone"
+	Remove-Item -Path "rclone.zip"
+	Pop-Location
+}
 
 Function ScriptInitialization {
 	$Script:BinFolder = $RootFolder + "\bin"
@@ -259,12 +267,24 @@ Function BackupFolder {
 
 	$tarOptions = "-cv"
 
-    If (($OutputFormat.Trim()) -like "*tar") {
+    If (($OutputFormat.Trim()) -like "*tar.gz") {
 		$FileFormat = ".tar"
-	}
-	ElseIf (($OutputFormat.Trim()) -like "*tar.gz") {
-		$FileFormat = ".tar.gz"
 		$tarOptions += "z"
+	}
+	ElseIf (($OutputFormat.Trim()) -like "*tar.bz2") {
+		$FileFormat = ".tar.bz2"
+		$tarOptions += "j"
+	}
+	ElseIf (($OutputFormat.Trim()) -like "*tar.xz") {
+		$FileFormat = ".tar.xz"
+		$tarOptions += "J"
+	}
+	ElseIf (($OutputFormat.Trim()) -like "*tar.lz") {
+		$FileFormat = ".tar.lz"
+		$tarOptions += " --lzma"
+	}
+	Else (($OutputFormat.Trim()) -like "*tar") {
+		$FileFormat = ".tar"
 	}
 	
 	$OutputFileName = "$OutputFolder\$InputFolderBottom" + "_" + "$CurrentDate$FileFormat"
