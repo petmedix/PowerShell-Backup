@@ -10,13 +10,15 @@
 .PARAMETER OutputPath 
 	Specify the folder to which the backup will be saved.
 .PARAMETER OutputFormat
-	Specify the archive file format to compress the backup to. Supported formats are .7z, .gzip, .tar, and .zip. The default is .zip
+	Specify the archive file format to compress the backup to. Supported formats are .tar, tar.gz, tar.lz and tar.xz. The default is .tar.gz
 .PARAMETER BackupList
 	Backup folders listed in the backuplist.txt file.
 .PARAMETER Install
 	Install the script to "C:\Users\%USERNAME%\Scripts\PowerShell-Backup" and create desktop and Start Menu shortcuts.
 .PARAMETER UpdateScript
 	Update the backup.ps1 script file to the most recent version.
+.PARAMETER NoTarUpdate
+	Default behaviour is to only append files newer than copy in archive. Use this to flag to create another copy of the archive (not recommended as it will copy *everything* again).
 
 .EXAMPLE
 	C:\Users\%USERNAME%\Scripts\Backup-Script\scripts\backup.ps1
@@ -38,12 +40,14 @@
 	Updates the backup.ps1 script file to the most recent version.
 
 .NOTES
-	Requires PowerShell version 5.0 or greater.
-	Author: mpb10
-	Updated: August 13th, 2018
-	Version: 2.0.0
+    Requires PowerShell version 5.0 or greater.
+	Authors: mpb10
+	Maintainers: rbbits
+	Updated: October 2020
+	Version: 2.1.1
+	Read more at: https://www.commandlinux.com/man-page/man1/tar.1.html
 .LINK 
-	https://github.com/mpb10/PowerShell-Backup
+	https://github.com/petmedix/PowerShell-Backup
 #>
 
 # ======================================================================================================= #
@@ -55,7 +59,8 @@ Param (
 	[String]$OutputFormat,
 	[Switch]$BackupList,
 	[Switch]$Install,
-	[Switch]$UpdateScript
+	[Switch]$UpdateScript,
+	[Switch]$NoTarUpdate = $False
 )
 
 
@@ -66,11 +71,8 @@ Param (
 #
 # ======================================================================================================= #
 
-$CheckForUpdates = $False
-$Verbose7Zip = $False
-
-
-
+$CheckForUpdates = $True
+$OutputFormat = ".tar.gz"
 
 # ======================================================================================================= #
 # ======================================================================================================= #
@@ -86,7 +88,7 @@ $codeRepository = "https://raw.githubusercontent.com/petmedix/PowerShell-Backup/
 $InstallLocation = $ENV:USERPROFILE + "\Scripts\PowerShell-Backup"
 $DesktopFolder = $ENV:USERPROFILE + "\Desktop"
 $StartFolder = $ENV:APPDATA + "\Microsoft\Windows\Start Menu\Programs\PowerShell-Backup"
-[Version]$RunningVersion = '2.0.0'
+[Version]$RunningVersion = '2.1.1'
 [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
 $CurrentDate = Get-Date -UFormat "%m-%d-%Y"
 $BackupFolderStatus = $True
@@ -238,7 +240,8 @@ Function BackupFolder {
 		[Parameter(Mandatory)]
 		[String]$InputFolder,
 		[Parameter(Mandatory)]
-		[String]$OutputFolder
+		[String]$OutputFolder,
+		[Switch]$NoTarUpdate
 	)
 	$Script:BackupFolderStatus = $True
 	
@@ -265,9 +268,10 @@ Function BackupFolder {
 	$InputFolderBottom = $InputFolder.Replace(" ", "_") | Split-Path -Leaf
 
 	$tarOptions = "-cv"
+	$tarOptionsLzma = ""
 
     If (($OutputFormat.Trim()) -like "*tar.gz") {
-		$FileFormat = ".tar"
+		$FileFormat = ".tar.gz"
 		$tarOptions += "z"
 	}
 	ElseIf (($OutputFormat.Trim()) -like "*tar.bz2") {
@@ -280,7 +284,7 @@ Function BackupFolder {
 	}
 	ElseIf (($OutputFormat.Trim()) -like "*tar.lz") {
 		$FileFormat = ".tar.lz"
-		$tarOptions += " --lzma"
+		$tarOptionsLzma += " --lzma"
 	}
 	ElseIf (($OutputFormat.Trim()) -like "*tar") {
 		$FileFormat = ".tar"
@@ -288,16 +292,20 @@ Function BackupFolder {
 	
 	$OutputFileName = "$OutputFolder\$InputFolderBottom" + "_" + "$CurrentDate$FileFormat"
 	
-	$Counter = 0
-	While ((Test-Path "$OutputFileName") -eq $True) {
-		$Counter++
-		$OutputFileName = "$OutputFolder\$InputFolderBottom" + "_" + "$CurrentDate ($Counter)$FileFormat"
+	if ($NoTarUpdate) {
+		$Counter = 0
+		While ((Test-Path "$OutputFileName") -eq $True) {
+			$Counter++
+			$OutputFileName = "$OutputFolder\$InputFolderBottom" + "_" + "$CurrentDate ($Counter)$FileFormat"
+		}
+	} else {
+		$tarOptions += "u"
 	}
 	
 	Write-Host "`nCompressing folder: ""$InputFolder""`nCompressing to:     ""$OutputFileName""" -ForegroundColor "Green"
 	
-	$tarOptions += " -f"
-	$tarCommand = "tar.exe" + $tarOptions + " " + $OutputFileName + " " + $InputFolder + "\*"
+	$tarOptions += "f"
+	$tarCommand = "tar.exe" + $tarOptions + " " + $OutputFileName + " " + $InputFolder + " " + $tarOptionsLzma + " " + "\*"
 	Write-Verbose "tar command: $tarCommand"
 	
 	If ($VerboseTar -eq $True) {
@@ -315,7 +323,8 @@ Function BackupFolder {
 Function BackupFromFile {
 	Param (
 		[Parameter(Mandatory)]
-		[String]$InputFile
+		[String]$InputFile,
+		[Switch]$NoTarUpdate
 	)
 	$Script:BackupFromFileStatus = $True
 	
@@ -345,7 +354,7 @@ Function BackupFromFile {
 		$BackupFromArray | Where-Object {$_ -ne $BackupFromArray[0]} | ForEach-Object {
 			$Counter = 0
 			While ($BackupToArray.Count -gt $Counter) {
-				BackupFolder "$_" $BackupToArray[$Counter]
+				BackupFolder "$_" $BackupToArray[$Counter], $NoTarUpdate
 				$Counter++
 			}
 		}
@@ -370,30 +379,30 @@ Function CommandLineMode {
 		UpdateScript
 		Exit
 	}
-	
+
 	If ($BackupList -eq $True -and ($OutputPath.Length) -gt 0) {
 		Write-Host "`n[ERROR]: The parameter -BackupList can't be used with -OutputPath.`n" -ForegroundColor "Red" -BackgroundColor "Black"
 	}
 	ElseIf ($BackupList -eq $True -and ($InputPath.Length) -gt 0) {
-		BackupFromFile "$InputPath"
+		BackupFromFile "$InputPath" $NoTarUpdate
 		If ($BackupFromFileStatus -eq $True) {
 			Write-Host "`nBackups complete.`n" -ForegroundColor "Yellow"
 		}
 	}
 	ElseIf ($BackupList -eq $True) {
-		BackupFromFile "$BackupListFile"
+		BackupFromFile "$BackupListFile" $NoTarUpdate
 		If ($BackupFromFileStatus -eq $True) {
 			Write-Host "`nBackups complete.`n" -ForegroundColor "Yellow"
 		}
 	}
 	ElseIf (($InputPath.Length) -gt 0 -and ($OutputPath.Length) -gt 0) {
-		BackupFolder "$InputPath" "$OutputPath"
+		BackupFolder "$InputPath" "$OutputPath" $NoTarUpdate
 		If ($BackupFolderStatus -eq $True) {
 			Write-Host "`nBackup complete. Backed up to: ""$OutputPath""`n" -ForegroundColor "Yellow"
 		}
 	}
 	ElseIf (($InputPath.Length) -gt 0) {
-		BackupFolder "$InputPath" "$PSScriptRoot"
+		BackupFolder "$InputPath" "$PSScriptRoot" $NoTarUpdate
 		If ($BackupFolderStatus -eq $True) {
 			Write-Host "`nBackup complete. Backed up to: ""$PSScriptRoot""`n" -ForegroundColor "Yellow"
 		}
