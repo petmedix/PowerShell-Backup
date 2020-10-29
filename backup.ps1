@@ -550,8 +550,8 @@ If ((Test-Path "$TempFolder\powershell-backup_log.log") -eq $True) {
 	}
 }
 
-If ((Test-Path "$BinFolder\rclone.exe") -eq $False -and $Install -eq $False) {
-	Write-Host "`nrclone.exe not found. Downloading and installing to: ""$BinFolder"" ...`n" -ForegroundColor "Yellow"
+If ((Test-Path "$BinFolder\rclone\rclone.exe") -eq $False -and $Install -eq $False) {
+	Write-Host "`nrclone.exe not found. Downloading and installing to: ""$BinFolder\rclone"" ...`n" -ForegroundColor "Yellow"
 	DownloadRclone
 }
 
